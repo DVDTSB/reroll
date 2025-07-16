@@ -7,3 +7,9 @@ edition = "2024"
 fastrand = "2.3.0"
 pest = "2.8.1"
 pest_derive = "2.8.1"
+
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
