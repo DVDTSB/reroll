@@ -1,0 +1,33 @@
+WHITESPACE = _{ " " | "\t" }
+
+dice_expr = ${ expr ~ (WHITESPACE+ ~ expr)* }
+
+expr = { term ~ (WHITESPACE* ~ operation ~ WHITESPACE* ~ term)* }
+
+term = _{ dice | number | parens }
+
+dice = {
+    dice_term? ~ roll ~ number ~ dice_modifier*
+}
+
+dice_term = _{ number | parens }
+
+dice_modifier = { (explode | keep_high | keep_low | drop_low | drop_high) ~ dice_term? }
+
+keep_low  = { "kl" }
+keep_high = { "kh" | "k" }
+drop_low  = { "dl" }
+drop_high = { "dh" | "d" }
+explode   = { "!" }
+
+roll = _{ "d" }
+
+number = @{ ASCII_DIGIT+ }
+
+operation = _{ add | subtract | multiply | divide }
+add       =  { "+" }
+subtract  =  { "-" }
+multiply  =  { "*" }
+divide    =  { "/" }
+
+parens = _{ "(" ~ WHITESPACE* ~ expr ~ WHITESPACE* ~ ")" | "[" ~ WHITESPACE* ~ expr ~ WHITESPACE* ~ "]" }
