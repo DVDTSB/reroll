@@ -1,10 +1,9 @@
+name: Create Release
+
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
-name: Create Release
+      - 'v*'  # Match version tags like v1.0, v2.3.4
 
 jobs:
   release:
@@ -17,11 +16,17 @@ jobs:
           - target: x86_64-pc-windows-gnu
             archive: zip
           - target: x86_64-unknown-linux-musl
-            archive: tar.gz tar.xz tar.zst
+            archive: tar.gz
+          - target: x86_64-unknown-linux-musl
+            archive: tar.xz
+          - target: x86_64-unknown-linux-musl
+            archive: tar.zst
           - target: x86_64-apple-darwin
             archive: zip
+
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
+
       - name: Compile and release
         uses: rust-build/rust-build.action@v1.4.5
         env:
