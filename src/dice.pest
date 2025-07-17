@@ -4,11 +4,11 @@ dice_expr = ${ expr ~ (WHITESPACE+ ~ expr)* }
 
 expr = { term ~ (WHITESPACE* ~ operation ~ WHITESPACE* ~ term)* }
 
-term = _{ dice | number | parens }
+term = _{ repetition | dice | number | parens }
 
-dice = {
-    dice_term? ~ roll ~ number ~ dice_modifier*
-}
+repetition = { dice_term ~ parens ~ dice_modifier* }
+
+dice = { dice_term? ~ roll ~ number ~ dice_modifier* }
 
 dice_term = _{ number | parens }
 

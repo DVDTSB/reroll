@@ -2,7 +2,7 @@ use pest::Parser;
 use pest_derive::Parser;
 
 #[derive(Parser)]
-#[grammar = "dice.pest"] // path relative to src/
+#[grammar = "dice.pest"]
 pub struct DiceParser;
 
 #[derive(Debug, PartialEq)]
@@ -14,6 +14,11 @@ pub enum Expr {
         modifiers: Vec<DiceModifier>,
     },
     BinaryOp(Box<Expr>, char, Box<Expr>),
+    Repetition {
+        count: Box<Expr>,
+        expr: Box<Expr>,
+        modifiers: Vec<DiceModifier>,
+    },
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,6 +41,26 @@ pub fn parse_expressions(pair: pest::iterators::Pair<Rule>) -> Vec<Expr> {
     pair.into_inner().map(|e| parse_expr(e)).collect()
 }
 
+pub fn parse_dice_modifier(pair: pest::iterators::Pair<Rule>) -> DiceModifier {
+    let mut mod_inner = pair.into_inner();
+    let kind_pair = mod_inner.next().unwrap();
+    let kind = match kind_pair.as_rule() {
+        Rule::explode => DiceModifierType::Explode,
+        Rule::keep_high => DiceModifierType::KeepHigh,
+        Rule::keep_low => DiceModifierType::KeepLow,
+        Rule::drop_high => DiceModifierType::DropHigh,
+        Rule::drop_low => DiceModifierType::DropLow,
+        _ => panic!("unknown modifier type!"),
+    };
+
+    let value = if let Some(v) = mod_inner.next() {
+        Some(Box::new(parse_expr(v)))
+    } else {
+        None
+    };
+    DiceModifier { kind, value }
+}
+
 pub fn parse_expr(pair: pest::iterators::Pair<Rule>) -> Expr {
     match pair.as_rule() {
         Rule::number => Expr::Number(pair.as_str().parse::<i32>().unwrap()),
@@ -51,24 +76,7 @@ pub fn parse_expr(pair: pest::iterators::Pair<Rule>) -> Expr {
             for child in children.into_iter() {
                 match child.as_rule() {
                     Rule::dice_modifier => {
-                        let mut mod_inner = child.into_inner();
-                        let kind_pair = mod_inner.next().unwrap();
-                        let kind = match kind_pair.as_rule() {
-                            Rule::explode => DiceModifierType::Explode,
-                            Rule::keep_high => DiceModifierType::KeepHigh,
-                            Rule::keep_low => DiceModifierType::KeepLow,
-                            Rule::drop_high => DiceModifierType::DropHigh,
-                            Rule::drop_low => DiceModifierType::DropLow,
-                            _ => panic!("unknown modifier type!"),
-                        };
-
-                        let value = if let Some(v) = mod_inner.next() {
-                            Some(Box::new(parse_expr(v)))
-                        } else {
-                            None
-                        };
-
-                        modifiers.push(DiceModifier { kind, value });
+                        modifiers.push(parse_dice_modifier(child.clone()));
                     }
                     Rule::number | Rule::expr => {
                         if set_sides {
@@ -86,6 +94,25 @@ pub fn parse_expr(pair: pest::iterators::Pair<Rule>) -> Expr {
             Expr::Dice {
                 count,
                 sides,
+                modifiers,
+            }
+        }
+
+        Rule::repetition => {
+            let mut children = pair.into_inner();
+
+            let count: Box<Expr> = Box::new(parse_expr(children.next().unwrap().clone()));
+            let expr: Box<Expr> = Box::new(parse_expr(children.next().unwrap().clone()));
+
+            let mut modifiers = Vec::new();
+
+            while let Some(child) = children.next() {
+                modifiers.push(parse_dice_modifier(child.clone()));
+            }
+
+            Expr::Repetition {
+                count,
+                expr,
                 modifiers,
             }
         }
@@ -127,7 +154,6 @@ mod tests {
 
         let exprs = parse_expressions(pairs);
 
-        // Check the first expression only for simplicity
         assert_eq!(exprs[0], expected);
     }
 
