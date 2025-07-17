@@ -39,16 +39,10 @@ $ reroll -v "4d6kh3"
 [6, 4, 4]
 ```
 
-## 🔧 Build
+## 🔧 Install
 
 ```sh
-cargo build --release
-```
-
-## ✅ Tests
-
-```sh
-cargo test
+cargo install reroll
 ```
 
 ## 📁 File Structure
