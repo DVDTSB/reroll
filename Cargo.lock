@@ -137,8 +137,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "roll"
-version = "0.1.0"
+name = "reroll"
+version = "1.0.0"
 dependencies = [
  "fastrand",
  "pest",
