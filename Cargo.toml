@@ -6,6 +6,7 @@ license-file = "LICENSE.md"
 readme = "README.md"
 homepage = "https://github.com/DVDTSB/reroll"
 repository = "https://github.com/DVDTSB/reroll"
+description = "cli app to roll dice!"
 
 [dependencies]
 fastrand = "2.3.0"
