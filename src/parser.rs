@@ -116,8 +116,7 @@ pub fn parse_expr(pair: pest::iterators::Pair<Rule>) -> Expr {
                 modifiers,
             }
         }
-
-        Rule::expr => {
+        Rule::add_sub | Rule::mul_div => {
             let mut inner = pair.into_inner();
             let mut left = parse_expr(inner.next().unwrap());
 
@@ -128,7 +127,6 @@ pub fn parse_expr(pair: pest::iterators::Pair<Rule>) -> Expr {
             }
             left
         }
-
         _ => unreachable!("from expr, {:?}", pair.as_rule()),
     }
 }
@@ -205,8 +203,79 @@ mod tests {
     }
 
     #[test]
+    fn test_binary_operation() {
+        parse_and_compare(
+            "2d6 + 3",
+            Expr::BinaryOp(
+                Box::new(Expr::Dice {
+                    count: Box::new(Expr::Number(2)),
+                    sides: Box::new(Expr::Number(6)),
+                    modifiers: vec![],
+                }),
+                '+',
+                Box::new(Expr::Number(3)),
+            ),
+        );
+    }
+
+    #[test]
+    fn test_nested_binary_ops() {
+        parse_and_compare(
+            "2d6 + 3 * 2",
+            Expr::BinaryOp(
+                Box::new(Expr::Dice {
+                    count: Box::new(Expr::Number(2)),
+                    sides: Box::new(Expr::Number(6)),
+                    modifiers: vec![],
+                }),
+                '+',
+                Box::new(Expr::BinaryOp(
+                    Box::new(Expr::Number(3)),
+                    '*',
+                    Box::new(Expr::Number(2)),
+                )),
+            ),
+        );
+    }
+
+    #[test]
+    fn test_repetition_syntax() {
+        parse_and_compare(
+            "3(1d6)",
+            Expr::Repetition {
+                count: Box::new(Expr::Number(3)),
+                expr: Box::new(Expr::Dice {
+                    count: Box::new(Expr::Number(1)),
+                    sides: Box::new(Expr::Number(6)),
+                    modifiers: vec![],
+                }),
+                modifiers: vec![],
+            },
+        );
+    }
+
+    #[test]
+    fn test_repetition_with_modifiers() {
+        parse_and_compare(
+            "2(4d6)kh3",
+            Expr::Repetition {
+                count: Box::new(Expr::Number(2)),
+                expr: Box::new(Expr::Dice {
+                    count: Box::new(Expr::Number(4)),
+                    sides: Box::new(Expr::Number(6)),
+                    modifiers: vec![],
+                }),
+                modifiers: vec![DiceModifier {
+                    kind: DiceModifierType::KeepHigh,
+                    value: Some(Box::new(Expr::Number(3))),
+                }],
+            },
+        );
+    }
+
+    #[test]
     fn test_multiple_expressions() {
-        let input = "3d6 4d3 + 4";
+        let input = "3d6 4(1d4) + 4";
 
         let pairs = DiceParser::parse(Rule::dice_expr, input)
             .expect("Failed to parse")

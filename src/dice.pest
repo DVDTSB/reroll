@@ -1,10 +1,9 @@
-WHITESPACE = _{ " " | "\t" }
-
 dice_expr = ${ expr ~ (WHITESPACE+ ~ expr)* }
 
-expr = { term ~ (WHITESPACE* ~ operation ~ WHITESPACE* ~ term)* }
-
-term = _{ repetition | dice | number | parens }
+expr      = _{ add_sub }
+add_sub   = { mul_div ~ (WHITESPACE* ~ (add | subtract) ~ WHITESPACE* ~ mul_div)* }
+mul_div   = { factor ~ (WHITESPACE* ~ (multiply | divide) ~ WHITESPACE* ~ factor)* }
+factor    = _{ repetition | dice | number | parens }
 
 repetition = { dice_term ~ parens ~ dice_modifier* }
 
@@ -24,10 +23,11 @@ roll = _{ "d" }
 
 number = @{ ASCII_DIGIT+ }
 
-operation = _{ add | subtract | multiply | divide }
-add       =  { "+" }
-subtract  =  { "-" }
-multiply  =  { "*" }
-divide    =  { "/" }
+add       = { "+" }
+subtract  = { "-" }
+multiply  = { "*" }
+divide    = { "/" }
 
 parens = _{ "(" ~ WHITESPACE* ~ expr ~ WHITESPACE* ~ ")" | "[" ~ WHITESPACE* ~ expr ~ WHITESPACE* ~ "]" }
+
+WHITESPACE = _{ " " | "\t" }

@@ -148,3 +148,138 @@ fn explode(mut rolls: Vec<i32>, sides: i32, threshold: i32) -> Vec<i32> {
     }
     rolls
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::{DiceModifier, DiceModifierType, Expr};
+
+    fn num(n: i32) -> Expr {
+        Expr::Number(n)
+    }
+
+    fn dice(count: i32, sides: i32, modifiers: Vec<DiceModifier>) -> Expr {
+        Expr::Dice {
+            count: Box::new(num(count)),
+            sides: Box::new(num(sides)),
+            modifiers,
+        }
+    }
+
+    fn rep(count: i32, expr: Expr, modifiers: Vec<DiceModifier>) -> Expr {
+        Expr::Repetition {
+            count: Box::new(num(count)),
+            expr: Box::new(expr),
+            modifiers,
+        }
+    }
+
+    fn binop(lhs: Expr, op: char, rhs: Expr) -> Expr {
+        Expr::BinaryOp(Box::new(lhs), op, Box::new(rhs))
+    }
+
+    fn modifier(kind: DiceModifierType, val: Option<i32>) -> DiceModifier {
+        DiceModifier {
+            kind,
+            value: val.map(|v| Box::new(num(v))),
+        }
+    }
+
+    #[test]
+    fn eval_number() {
+        let expr = num(42);
+        assert_eq!(eval_expr(&expr).to_number(), 42);
+    }
+
+    #[test]
+    fn eval_addition() {
+        let expr = binop(num(2), '+', num(3));
+        assert_eq!(eval_expr(&expr).to_number(), 5);
+    }
+
+    #[test]
+    fn eval_multiplication_precedence() {
+        let expr = binop(num(2), '+', binop(num(3), '*', num(4)));
+        assert_eq!(eval_expr(&expr).to_number(), 14);
+    }
+
+    #[test]
+    fn eval_simple_dice_roll() {
+        let expr = dice(2, 6, vec![]);
+        match eval_expr(&expr) {
+            EvalResult::Rolls(rolls) => {
+                assert_eq!(rolls.len(), 2);
+                assert!(rolls.iter().all(|&r| (1..=6).contains(&r)));
+            }
+            _ => panic!("Expected dice rolls"),
+        }
+    }
+
+    #[test]
+    fn eval_repetition_roll() {
+        let inner_dice = dice(1, 6, vec![]);
+        let expr = rep(3, inner_dice, vec![]);
+        match eval_expr(&expr) {
+            EvalResult::Rolls(rolls) => {
+                assert_eq!(rolls.len(), 3);
+                assert!(rolls.iter().all(|&r| (1..=6).contains(&r)));
+            }
+            _ => panic!("Expected repetition result"),
+        }
+    }
+
+    #[test]
+    fn keep_high_modifier_works() {
+        let expr = Expr::Dice {
+            count: Box::new(num(5)),
+            sides: Box::new(num(6)),
+            modifiers: vec![modifier(DiceModifierType::KeepHigh, Some(3))],
+        };
+
+        let EvalResult::Rolls(rolls) = eval_expr(&expr) else {
+            panic!("Expected rolls");
+        };
+
+        assert!(rolls.len() <= 3);
+    }
+
+    #[test]
+    fn drop_low_modifier_works() {
+        let expr = Expr::Dice {
+            count: Box::new(num(4)),
+            sides: Box::new(num(6)),
+            modifiers: vec![modifier(DiceModifierType::DropLow, Some(2))],
+        };
+
+        let EvalResult::Rolls(rolls) = eval_expr(&expr) else {
+            panic!("Expected rolls");
+        };
+
+        assert!(rolls.len() <= 2);
+    }
+
+    #[test]
+    fn explode_modifier_works() {
+        let expr = Expr::Dice {
+            count: Box::new(num(2)),
+            sides: Box::new(num(3)),
+            modifiers: vec![modifier(DiceModifierType::Explode, None)],
+        };
+
+        let EvalResult::Rolls(rolls) = eval_expr(&expr) else {
+            panic!("Expected rolls");
+        };
+
+        assert!(rolls.len() >= 2);
+        assert!(rolls.iter().all(|&r| (1..=3).contains(&r)));
+    }
+
+    #[test]
+    fn test_division_by_zero_panics() {
+        let expr = binop(num(4), '/', num(0));
+        let result = std::panic::catch_unwind(|| {
+            eval_expr(&expr);
+        });
+        assert!(result.is_err());
+    }
+}
