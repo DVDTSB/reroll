@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - "**"
+      - "*"
   pull_request:
   release:
     types: [published]
@@ -53,6 +53,7 @@ jobs:
           cross-version: 107433fa9d71d7eb506cd5bf5467bab89edb7a52
 
       - name: Package binary
+        shell: bash
         run: |
           mkdir -p release-package
           cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} release-package/
@@ -61,10 +62,9 @@ jobs:
           else
             tar czf ${{ matrix.platform.name }} -C release-package ${{ matrix.platform.bin }}
           fi
-        shell: bash
 
       - name: Upload packaged artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }}-stable
           path: ${{ matrix.platform.name }}
@@ -78,19 +78,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download Linux artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: roll-Linux-x86_64-musl.tar.gz-stable
           path: ./artifacts/Linux-x86_64
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: roll-Windows-x86_64.zip-stable
           path: ./artifacts/Windows-x86_64
 
       - name: Download macOS artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: roll-Darwin-x86_64.tar.gz-stable
           path: ./artifacts/macOS-x86_64
