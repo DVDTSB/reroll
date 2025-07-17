@@ -1,7 +1,11 @@
 [package]
 name = "roll"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
+license-file = "LICENSE.md"
+readme = "README.md"
+homepage = "https://github.com/DVDTSB/roll"
+repository = "https://github.com/DVDTSB/roll"
 
 [dependencies]
 fastrand = "2.3.0"
