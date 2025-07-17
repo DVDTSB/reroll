@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 env:
-  CRATE_NAME: roll
+  CRATE_NAME: reroll
   GITHUB_TOKEN: ${{ github.token }}
   RUST_BACKTRACE: 1
 
@@ -23,18 +23,18 @@ jobs:
           - os-name: Linux-x86_64
             runs-on: ubuntu-24.04
             target: x86_64-unknown-linux-musl
-            bin: roll
-            name: roll-Linux-x86_64-musl.tar.gz
+            bin: reroll
+            name: reroll-Linux-x86_64-musl.tar.gz
           - os-name: Windows-x86_64
             runs-on: windows-latest
             target: x86_64-pc-windows-msvc
-            bin: roll.exe
-            name: roll-Windows-x86_64.zip
+            bin: reroll.exe
+            name: reroll-Windows-x86_64.zip
           - os-name: macOS-x86_64
             runs-on: macOS-latest
             target: x86_64-apple-darwin
-            bin: roll
-            name: roll-Darwin-x86_64.tar.gz
+            bin: reroll
+            name: reroll-Darwin-x86_64.tar.gz
         toolchain:
           - stable
 
@@ -78,27 +78,27 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: roll-Linux-x86_64-musl.tar.gz-stable
+          name: reroll-Linux-x86_64-musl.tar.gz-stable
           path: ./artifacts/Linux-x86_64
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: roll-Windows-x86_64.zip-stable
+          name: reroll-Windows-x86_64.zip-stable
           path: ./artifacts/Windows-x86_64
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: roll-Darwin-x86_64.tar.gz-stable
+          name: reroll-Darwin-x86_64.tar.gz-stable
           path: ./artifacts/macOS-x86_64
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./artifacts/Linux-x86_64/roll-Linux-x86_64-musl.tar.gz
-            ./artifacts/Windows-x86_64/roll-Windows-x86_64.zip
-            ./artifacts/macOS-x86_64/roll-Darwin-x86_64.tar.gz
+            ./artifacts/Linux-x86_64/reroll-Linux-x86_64-musl.tar.gz
+            ./artifacts/Windows-x86_64/reroll-Windows-x86_64.zip
+            ./artifacts/macOS-x86_64/reroll-Darwin-x86_64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

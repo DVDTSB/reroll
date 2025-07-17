@@ -1,4 +1,4 @@
-# 🎲 roll
+# 🎲 reroll
 
 A powerful and flexible command-line dice roller for tabletop games and probability testing.
 
@@ -11,9 +11,9 @@ Supports:
 ## 🧾 Usage
 
 ```sh
-roll "4d6kh3 + 2"
-roll "3(2d8+1)"
-roll "1d20 + 5" 
+reroll "4d6kh3 + 2"
+reroll "3(2d8+1)"
+reroll "1d20 + 5" 
 ````
 
 Use quotes around expressions to avoid shell interference.
@@ -32,10 +32,10 @@ Use quotes around expressions to avoid shell interference.
 ## 🧪 Example Output
 
 ```sh
-$ roll "4d6kh3"
+$ reroll "4d6kh3"
 14
 
-$ roll -v "4d6kh3"
+$ reroll -v "4d6kh3"
 [6, 4, 4]
 ```
 
