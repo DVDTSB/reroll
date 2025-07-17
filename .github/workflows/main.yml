@@ -1,36 +1,106 @@
-name: Create Release
+name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'  # Match version tags like v1.0, v2.3.4
+    branches:
+      - "**"
+  pull_request:
+  release:
+    types: [published]
+
+env:
+  CRATE_NAME: roll
+  GITHUB_TOKEN: ${{ github.token }}
+  RUST_BACKTRACE: 1
 
 jobs:
-  release:
-    name: release ${{ matrix.target }}
-    runs-on: ubuntu-latest
+  build:
+    name: Build ${{ matrix.platform.os-name }} with Rust ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.platform.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - target: x86_64-pc-windows-gnu
-            archive: zip
-          - target: x86_64-unknown-linux-musl
-            archive: tar.gz
-          - target: x86_64-unknown-linux-musl
-            archive: tar.xz
-          - target: x86_64-unknown-linux-musl
-            archive: tar.zst
-          - target: x86_64-apple-darwin
-            archive: zip
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            bin: roll
+            name: roll-Linux-x86_64-musl.tar.gz
+          - os-name: Windows-x86_64
+            runs-on: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: roll.exe
+            name: roll-Windows-x86_64.zip
+          - os-name: macOS-x86_64
+            runs-on: macOS-latest
+            target: x86_64-apple-darwin
+            bin: roll
+            name: roll-Darwin-x86_64.tar.gz
+        toolchain:
+          - stable
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.5
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: "build"
+          target: ${{ matrix.platform.target }}
+          toolchain: ${{ matrix.toolchain }}
+          args: "--locked --release"
+          strip: true
+          cross-version: 107433fa9d71d7eb506cd5bf5467bab89edb7a52
+
+      - name: Package binary
+        run: |
+          mkdir -p release-package
+          cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} release-package/
+          if [[ "${{ matrix.platform.os-name }}" == Windows-* ]]; then
+            powershell Compress-Archive -Path release-package/${{ matrix.platform.bin }} -DestinationPath ${{ matrix.platform.name }}
+          else
+            tar czf ${{ matrix.platform.name }} -C release-package ${{ matrix.platform.bin }}
+          fi
+        shell: bash
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.platform.name }}-stable
+          path: ${{ matrix.platform.name }}
+
+  release:
+    name: Publish to GitHub Releases
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: roll-Linux-x86_64-musl.tar.gz-stable
+          path: ./artifacts/Linux-x86_64
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: roll-Windows-x86_64.zip-stable
+          path: ./artifacts/Windows-x86_64
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: roll-Darwin-x86_64.tar.gz-stable
+          path: ./artifacts/macOS-x86_64
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/Linux-x86_64/roll-Linux-x86_64-musl.tar.gz
+            ./artifacts/Windows-x86_64/roll-Windows-x86_64.zip
+            ./artifacts/macOS-x86_64/roll-Darwin-x86_64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
